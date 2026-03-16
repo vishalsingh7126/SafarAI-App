@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { generateAITravelResponse } from '../services/aiService';
 
 const initialMessage = {
@@ -70,7 +71,22 @@ function TravelAssistantChat({ mode = 'floating' }) {
                 : 'border border-brand-100 bg-white text-slate-700'
             }`}
           >
-            {message.text}
+            {message.role === 'assistant' ? (
+              <ReactMarkdown
+                components={{
+                  p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                  strong: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
+                  ul: ({ children }) => <ul className="ml-4 list-disc space-y-1">{children}</ul>,
+                  ol: ({ children }) => <ol className="ml-4 list-decimal space-y-1">{children}</ol>,
+                  li: ({ children }) => <li className="text-sm">{children}</li>,
+                  h3: ({ children }) => <h3 className="font-bold text-slate-900 mt-2 mb-1">{children}</h3>,
+                }}
+              >
+                {message.text}
+              </ReactMarkdown>
+            ) : (
+              message.text
+            )}
           </div>
         </div>
       ))}
@@ -99,7 +115,6 @@ function TravelAssistantChat({ mode = 'floating' }) {
     </div>
   );
 
-  // ── Page mode: always-open, fills its container ──────────────────────────
   if (isPageMode) {
     return (
       <div className="flex flex-col overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-xl">
@@ -117,7 +132,6 @@ function TravelAssistantChat({ mode = 'floating' }) {
     );
   }
 
-  // ── Floating mode: original fixed bottom-right toggle behavior ───────────
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
       <div

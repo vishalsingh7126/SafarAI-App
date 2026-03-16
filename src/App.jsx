@@ -1,3 +1,5 @@
+import { supabase } from './services/supabase'
+console.log('Supabase connected:', supabase)
 import { Navigate, Route, Routes } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import BudgetCalculator from './pages/BudgetCalculator';

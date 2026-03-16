@@ -1,20 +1,18 @@
-import OpenAI from 'openai';
+import Groq from 'groq-sdk';
 
-const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+const apiKey = import.meta.env.VITE_GROQ_API_KEY;
 
-console.info('[SafarAI AI] VITE_OPENAI_API_KEY loaded:', {
+console.info('[SafarAI AI] VITE_GROQ_API_KEY loaded:', {
   exists: Boolean(apiKey),
   length: apiKey ? apiKey.length : 0,
   preview: apiKey ? `${apiKey.slice(0, 7)}...` : 'missing',
 });
 
 if (!apiKey) {
-  console.error(
-    '[SafarAI AI] Missing VITE_OPENAI_API_KEY. Add it to your .env file and restart Vite.'
-  );
+  console.error('[SafarAI AI] Missing VITE_GROQ_API_KEY. Add it to your .env.local file and restart Vite.');
 }
 
-const client = new OpenAI({
+const client = new Groq({
   apiKey,
   dangerouslyAllowBrowser: true,
 });
@@ -22,12 +20,11 @@ const client = new OpenAI({
 export async function generateAITravelResponse(message) {
   try {
     const response = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'llama-3.3-70b-versatile',
       messages: [
         {
           role: 'system',
-          content:
-            'You are SafarAI, an intelligent travel assistant that helps users plan trips, discover destinations, suggest safe travel routes, and estimate travel budgets.',
+          content: `You are SafarAI, an expert AI travel assistant built by TravelCore. You help users plan detailed trip itineraries, discover destinations, explore local food and culture, suggest safe travel routes, and estimate travel budgets. Always be friendly, specific, and practical in your advice.`,
         },
         {
           role: 'user',
@@ -39,24 +36,7 @@ export async function generateAITravelResponse(message) {
 
     return response.choices?.[0]?.message?.content?.trim() || '';
   } catch (error) {
-    console.error('OpenAI API Error:', error);
-
-    if (error?.status) {
-      console.error('Status:', error.status);
-    }
-
-    if (error?.message) {
-      console.error('Message:', error.message);
-    }
-
-    if (error?.error) {
-      console.error('Details:', error.error);
-    }
-
-    if (error?.stack) {
-      console.error('Stack:', error.stack);
-    }
-
+    console.error('Groq API Error:', error);
     return "Sorry, I couldn't process your request right now. Please try again.";
   }
 }
