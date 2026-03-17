@@ -251,23 +251,38 @@ Continue this exact format for all ${days} days. Use real place names, specific 
                 📅 Start Date
               </label>
               <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full rounded-xl border-2 border-brand-100 bg-white px-4 py-3 text-sm text-ink outline-none focus:border-brand-400 transition cursor-pointer"
-              />
+  type="date"
+  value={startDate}
+  onChange={(e) => setStartDate(e.target.value)}
+  onClick={(e) => e.currentTarget.showPicker()}
+  className="w-full rounded-xl border-2 border-brand-100 bg-white px-4 py-3 text-sm text-ink outline-none focus:border-brand-400 transition cursor-pointer"
+/>
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-400">
                 📅 End Date
               </label>
               <input
-                type="date"
-                value={endDate}
-                min={startDate || undefined}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full rounded-xl border-2 border-brand-100 bg-white px-4 py-3 text-sm text-ink outline-none focus:border-brand-400 transition cursor-pointer"
-              />
+  type="date"
+  value={endDate}
+  min={startDate || undefined}
+  onChange={(e) => setEndDate(e.target.value)}
+  onClick={(e) => {
+    try {
+      e.currentTarget.showPicker();
+    } catch {
+      // fallback for browsers that don't support showPicker
+    }
+  }}
+  onFocus={(e) => {
+    try {
+      e.currentTarget.showPicker();
+    } catch {
+      // fallback
+    }
+  }}
+  className="w-full rounded-xl border-2 border-brand-100 bg-white px-4 py-3 text-sm text-ink outline-none focus:border-brand-400 transition cursor-pointer"
+/>
             </div>
           </div>
 
