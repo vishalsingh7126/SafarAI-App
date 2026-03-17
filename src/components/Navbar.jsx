@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import BrandLogo from './BrandLogo';
+import { supabase } from '../lib/supabase';
 
 const navItems = [
   { to: '/', label: 'Home' },
@@ -8,13 +9,78 @@ const navItems = [
   { to: '/nearby', label: 'Nearby' },
   { to: '/trip-planner', label: 'Trip Planner' },
   { to: '/my-trips', label: 'My Trips' },
-  { to: '/railway', label: 'Railway' },
   { to: '/safety', label: 'Safety' },
   { to: '/community', label: 'Community' },
 ];
 
-function Navbar() {
+function Navbar({ authLoading, isAdmin }) {
   const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState(null);
+  const [profileFirstName, setProfileFirstName] = useState(localStorage.getItem('safarai_first_name') || '');
+
+  async function fetchProfileFirstName(userId) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('first_name')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      return;
+    }
+
+    const firstName = data?.first_name || '';
+    setProfileFirstName(firstName);
+    if (firstName) {
+      localStorage.setItem('safarai_first_name', firstName);
+    }
+  }
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      const activeUser = data?.user ?? null;
+      setUser(activeUser);
+      if (activeUser?.id) {
+        fetchProfileFirstName(activeUser.id);
+      }
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      const activeUser = session?.user ?? null;
+      setUser(activeUser);
+      if (activeUser?.id) {
+        fetchProfileFirstName(activeUser.id);
+      } else {
+        setProfileFirstName('');
+        localStorage.removeItem('safarai_first_name');
+      }
+      if (event === 'SIGNED_OUT') {
+        window.location.href = '/auth';
+      }
+    });
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const emailPrefix = user?.email?.split('@')[0] || '';
+  const firstName = emailPrefix.split(/[._]/)[0] || 'Traveler';
+  const displayName = user
+    ? profileFirstName || firstName.charAt(0).toUpperCase() + firstName.slice(1)
+    : 'Admin';
+
+  async function handleLogout() {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Logout error:', error.message);
+      return;
+    }
+    setUser(null);
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = '/auth';
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 14);
@@ -22,6 +88,8 @@ function Navbar() {
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  const isLoggedIn = !authLoading && (!!user || isAdmin);
 
   return (
     <header
@@ -56,12 +124,25 @@ function Navbar() {
         </ul>
 
         <div className="justify-self-center sm:justify-self-end">
-          <Link
-            to="/auth"
-            className="interactive inline-flex rounded-full border border-brand-200 bg-white/90 px-4 py-2 text-sm font-semibold text-brand-700 shadow-md transition-all duration-200 hover:scale-[1.02] hover:border-brand-300 hover:bg-white hover:text-brand-600"
-          >
-            Login
-          </Link>
+          {isLoggedIn ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-700 tracking-wide">{`Welcome ${displayName}`}</span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="interactive inline-flex rounded-full border border-brand-200 bg-white/90 px-4 py-2 text-sm font-semibold text-brand-700 shadow-md transition-all duration-200 hover:scale-[1.02] hover:border-brand-300 hover:bg-white hover:text-brand-600"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/auth"
+              className="interactive inline-flex rounded-full border border-brand-200 bg-white/90 px-4 py-2 text-sm font-semibold text-brand-700 shadow-md transition-all duration-200 hover:scale-[1.02] hover:border-brand-300 hover:bg-white hover:text-brand-600"
+            >
+              Login
+            </Link>
+          )}
         </div>
       </nav>
     </header>

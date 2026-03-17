@@ -4,12 +4,12 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import TravelAssistantChat from '../components/TravelAssistantChat';
 
-function MainLayout() {
+function MainLayout({ user, authLoading, isAdmin }) {
   const location = useLocation();
 
   return (
     <div className="min-h-screen">
-      <Navbar />
+      <Navbar user={user} authLoading={authLoading} isAdmin={isAdmin} />
       <main className="mx-auto w-full max-w-7xl px-4 pb-8 pt-6 sm:px-6 md:pt-8 lg:px-8">
         <Outlet />
       </main>

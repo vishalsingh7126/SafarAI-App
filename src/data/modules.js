@@ -23,8 +23,8 @@ export const modules = [
   {
     id: 'railway',
     code: 'RT',
-    title: 'Railway & Transport Tools',
-    description: 'Search trains, stations, and transport routes.',
+    title: 'Railverse',
+    description: 'Search trains, stations, PNR status, and transport routes with powerful railway intelligence.',
     route: '/railway',
   },
   {
