@@ -87,11 +87,16 @@ Travel dates: ${formatDisplayDate(startDate)} to ${formatDisplayDate(endDate)}
 
 Format the response exactly like this for each day:
 ## Day 1 — [Creative theme for the day]
-**Morning:** [Specific activity with real place names and details]
-**Afternoon:** [Specific activity with real place names and details]
-**Evening:** [Specific activity with real place names and details]
-**🍽️ Food tip:** [Specific local dish and restaurant name to try]
-**💡 Pro tip:** [One practical travel tip for this day]
+
+- **🌅 Morning:** [Specific activity with real place names and details]
+
+- **☀️ Afternoon:** [Specific activity with real place names and details]
+
+- **🌙 Evening:** [Specific activity with real place names and details]
+
+- **🍽️ Food tip:** [Specific local dish and restaurant name to try]
+
+- **💡 Pro tip:** [One practical travel tip for this day]
 
 Continue this exact format for all ${days} days. Use real place names, specific restaurant recommendations, and genuinely useful tips. Make it feel like advice from a local expert.`;
 
@@ -413,38 +418,41 @@ Continue this exact format for all ${days} days. Use real place names, specific 
           {/* Itinerary Content */}
           <div className="rounded-2xl border border-brand-100 bg-white p-6 shadow-panel">
             <ReactMarkdown
-              components={{
-                h2: ({ children }) => (
-                  <div className="mt-8 first:mt-0">
-                    <div className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-accent-500 px-4 py-2 text-sm font-bold text-white mb-4">
-                      {children}
-                    </div>
-                  </div>
-                ),
-                h3: ({ children }) => (
-                  <h3 className="mt-4 text-base font-bold text-ink">{children}</h3>
-                ),
-                strong: ({ children }) => (
-                  <strong className="font-bold text-brand-700">{children}</strong>
-                ),
-                p: ({ children }) => (
-                  <p className="mb-3 text-sm leading-relaxed text-slate-600 pl-2 border-l-2 border-brand-100">
-                    {children}
-                  </p>
-                ),
-                ul: ({ children }) => (
-                  <ul className="ml-4 mb-3 list-disc space-y-1">{children}</ul>
-                ),
-                ol: ({ children }) => (
-                  <ol className="ml-4 mb-3 list-decimal space-y-1">{children}</ol>
-                ),
-                li: ({ children }) => (
-                  <li className="text-sm text-slate-600">{children}</li>
-                ),
-              }}
-            >
-              {itinerary}
-            </ReactMarkdown>
+  components={{
+    h2: ({ children }) => (
+      <div className="mt-8 first:mt-0 mb-4">
+        <div className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-accent-500 px-4 py-2 text-sm font-bold text-white">
+          {children}
+        </div>
+      </div>
+    ),
+    h3: ({ children }) => (
+      <h3 className="mt-4 text-base font-bold text-ink">{children}</h3>
+    ),
+    strong: ({ children }) => (
+      <strong className="font-bold text-brand-700">{children}</strong>
+    ),
+    p: ({ children }) => (
+      <p className="mb-3 text-sm leading-relaxed text-slate-600">
+        {children}
+      </p>
+    ),
+    ul: ({ children }) => (
+      <ul className="space-y-3 mb-4">{children}</ul>
+    ),
+    ol: ({ children }) => (
+      <ol className="ml-4 mb-3 list-decimal space-y-2">{children}</ol>
+    ),
+    li: ({ children }) => (
+      <li className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600 leading-relaxed">
+        <span className="mt-0.5 text-brand-400 font-bold">•</span>
+        <span>{children}</span>
+      </li>
+    ),
+  }}
+>
+  {itinerary}
+</ReactMarkdown>
           </div>
 
           {!savedMsg && (
