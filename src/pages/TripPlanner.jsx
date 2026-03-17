@@ -1,279 +1,60 @@
+import { searchCities } from '../services/destinationService';
 import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import usePageMeta from '../hooks/usePageMeta';
-import SearchPanel from '../components/SearchPanel';
+import { generateAITravelResponse } from '../services/aiService';
+import { supabase } from '../services/supabase';
 
 const STYLE_OPTIONS = [
-  { value: 'adventure', label: 'Adventure' },
-  { value: 'relaxation', label: 'Relaxation' },
-  { value: 'cultural', label: 'Cultural' },
-  { value: 'food', label: 'Food' },
-  { value: 'nature', label: 'Nature' },
+  { value: 'adventure', label: 'Adventure', icon: '🏔️', desc: 'Thrilling activities' },
+  { value: 'relaxation', label: 'Relaxation', icon: '🌊', desc: 'Rest and recharge' },
+  { value: 'cultural', label: 'Cultural', icon: '🏛️', desc: 'History and arts' },
+  { value: 'food', label: 'Food & Cuisine', icon: '🍜', desc: 'Local flavors' },
+  { value: 'nature', label: 'Nature', icon: '🌿', desc: 'Outdoors and wildlife' },
 ];
-
-const STYLE_ICONS = {
-  adventure: '🏔️',
-  relaxation: '🌊',
-  cultural: '🏛️',
-  food: '🍜',
-  nature: '🌿',
-};
-
-// Mock itinerary database keyed by destination keyword + style + days
-function generateItinerary(destination, days, style) {
-  const dest = destination.trim().toLowerCase();
-  const num = parseInt(days, 10);
-
-  // Destination-specific templates
-  const templates = {
-    goa: {
-      adventure: [
-        'Water sports at Baga Beach — parasailing, jet skiing, and banana boat rides',
-        'Trek through Cotigao Wildlife Sanctuary and night camping',
-        'Scuba diving at Grande Island and kayaking at Mandovi River',
-        'ATV trail ride through Bondla Wildlife Sanctuary',
-        'Rock climbing at Dudhsagar Falls base and rafting on Mhadei River',
-        'Surfing lessons at Ashwem Beach and cliff jumping at Cola Beach',
-        'Mountain biking through spice plantation backroads to Tambdi Surla',
-      ],
-      relaxation: [
-        'Sunrise yoga at Anjuna Beach and spa session at a beach resort',
-        'Lazy afternoon at Palolem Beach with sunset cruise on the backwaters',
-        'Ayurvedic wellness treatment and evening stroll at Candolim Beach',
-        'Silent beach day at Cabo de Rama and candlelight dinner by the sea',
-        'Hammock day at Agonda Beach and meditation at a beachside retreat',
-        'Houseboat stay on Sal River and floating breakfast experience',
-        'Day spa at Vagator cliffs and moonlit walk on Morjim Beach',
-      ],
-      cultural: [
-        'Se Cathedral, Basilica of Bom Jesus, and the Chapel of St. Francis of Assisi in Old Goa',
-        'Walking tour of Fontainhas Latin Quarter and Goa State Museum in Panaji',
-        'Ancestral Goa museum in Loutolim and Shantadurga Temple visit',
-        'Spice plantation tour with traditional Goan lunch and folk performance',
-        'Goa Carnival parade and street art walk through Siolim village',
-        'Tile painting workshop and visit to Goa Chitra ethnographic museum',
-        'Attending a Konkani theatre show and heritage walk through Chandor mansions',
-      ],
-      food: [
-        "Breakfast at Cafe Bhosle for poha and xacuti, fish curry rice at Martin's Corner",
-        'Seafood trail — crab xec xec at Ritz Classic and prawn balchão at Vinayak Family Restaurant',
-        'Goan sausage pão at Mapusa market and bebinca tasting at local bakeries',
-        'Cashew feni distillery tour with local tasting session at Sal Valley',
-        'Cooking class — fish recheado and sol kadhi at a homestay in Benaulim',
-        'Street food crawl through Anjuna flea market and Goa Velha village feast',
-        'Breakfast at Cafe Tato, lunch at Fisherman\'s Wharf, dinner at Caravela',
-      ],
-      nature: [
-        'Dudhsagar Falls day trip through Bhagwan Mahavir Wildlife Sanctuary',
-        'Cotigao Wildlife Sanctuary birdwatching walk and mangrove kayaking at Chorao Island',
-        'Butterfly conservatory at Bondla and nature trail at Netravali Wildlife Sanctuary',
-        'Sunrise hike to Sada viewpoint and boat safari on Zuari mangroves',
-        'Wetland birding at Carambolim Lake and spice farm nature walk',
-        'Night safari at Bhagwan Mahavir Sanctuary and firefly trek near Valpoi',
-        'Forest walk at Mollem National Park and dusk photography at Anjuna headland',
-      ],
-    },
-    delhi: {
-      adventure: [
-        'Rock climbing at Aravalli foothills and go-karting at Leisure Valley, Gurgaon',
-        'Cycling tour of Old Delhi narrow lanes and rooftop parkour at Hauz Khas Village',
-        'Zipline and rappelling at Adventure Island, Rohini',
-        'Trekking trail at Asola Bhatti Wildlife Sanctuary and bouldering at Delhi Rock',
-        'White-water rafting day trip to Rishikesh from Delhi',
-        'Archery range at Karnataka Sangha and martial arts experience at Siri Fort',
-        'Hot air balloon over Qutub Minar area at dawn',
-      ],
-      relaxation: [
-        'Morning walk at Lodhi Garden and afternoon tea at The Imperial hotel',
-        'Meditation session at Lotus Temple and leisurely row boat at Garden of Five Senses',
-        'Khan Market café hopping and sunset at India Gate lawns',
-        'Spa day at a Hauz Khas boutique hotel and evening jazz at Piano Man',
-        'Sunday morning book market at Daryaganj and lazy afternoon at Sunder Nursery',
-        'Saket mall aromatherapy and foot massage at Connaught Place wellness studio',
-        'Early morning Yamuna Biodiversity Park walk followed by rooftop brunch',
-      ],
-      cultural: [
-        'Red Fort, Jama Masjid, and Chandni Chowk heritage walk',
-        'Humayun\'s Tomb, Purana Qila, and Crafts Museum exploration',
-        'Qutub Minar complex and Mehrauli Archaeological Park',
-        'National Museum and Gandhi Smriti memorial visit',
-        'Akshardham Temple evening and National Rail Museum',
-        'Agrasen ki Baoli, Jantar Mantar, and Rashtrapati Bhavan gardens',
-        'Partition Museum at Town Hall and Lodi Colony street art walk',
-      ],
-      food: [
-        'Paranthe Wali Gali breakfast, butter chicken at Moti Mahal, and chaat at Bengali Market',
-        'Karim\'s lunch in Old Delhi and Punjabi by Nature dinner in Connaught Place',
-        'INA market food exploration and Japanese at Shiro',
-        'Sarojini Nagar street food and dinner at Bukhara, ITC Maurya',
-        'Sunday ke chole bhature at Sita Ram Dhiyan Chand and kebabs at Al Jawahar',
-        'Delhi food walk through Lajpat Nagar and gol gappa challenge at Chandni Chowk',
-        'Breakfast at Wenger\'s, lunch at Gulati in Pandara Road, and dessert at Roshan di Kulfi',
-      ],
-      nature: [
-        'Sunrise birdwatching at Okhla Bird Sanctuary and Sunder Nursery nature walk',
-        'Yamuna Biodiversity Park trail and Deer Park stroll in Hauz Khas',
-        'Tughlaqabad nature trails and Asola Bhatti Wildlife Sanctuary',
-        'Aravalli Biodiversity Park cycling and Lodhi Garden picnic',
-        'Delhi Ridge Forest walk and rose garden at Nehru Park',
-        'Butterfly Park at Bhalswa and wetland walk near Sultanpur Bird Sanctuary',
-        'Dawn fog walk at Mehrauli Archaeological Park and tree photography tour',
-      ],
-    },
-    mumbai: {
-      adventure: [
-        'Sea kayaking from Versova Beach to Gorai and cliff walk at Sanjay Gandhi park',
-        'Rock climbing at Vihar Lake sector and night cycling on Bandra sea link approach',
-        'Trekking to Karnala Bird Sanctuary and rappelling at Matheran day trip',
-        'Scuba diving off Alibag coast and windsurfing at Manori',
-        'Urban parkour in Dharavi rooftop area and bouldering at Borivali',
-        'Paragliding at Kamshet day trip and jet skiing at Aksa Beach',
-        'Night fishing adventure with local fishermen at Versova',
-      ],
-      relaxation: [
-        'Marine Drive sunrise walk and breakfast at Kyani & Co. in Dhobi Talao',
-        'Juhu Beach sunset and foot massage at a Bandra wellness studio',
-        'Afternoon at the rooftop pool of Taj Lands End and high tea at Dome',
-        'Sanjay Gandhi National Park butterfly trail and Powai lake cafés',
-        'Lazy day at Carter Road promenade and jazz evening at Blue Frog',
-        'Ayurvedic spa at Colaba boutique hotel and moon walk on Gorai Beach',
-        'Sunrise at Bandstand and leisurely Bandra–Worli cycling along the sea link view',
-      ],
-      cultural: [
-        'Chhatrapati Shivaji Maharaj Vastu Sangrahalaya and Elephanta Caves ferry trip',
-        'Dharavi slum art tour and Chor Bazaar antique walk',
-        'Knesset Eliyahoo Synagogue, St. Thomas Cathedral, and CST heritage architecture walk',
-        'Dr. Bhau Daji Lad Museum in Byculla and Banganga Tank village',
-        'Bollywood studio tour at Film City, Goregaon',
-        'Prithvi Theatre evening and Juhu temple trail',
-        'East Indian village walk at Manori and Koli fishing community visit at Versova',
-      ],
-      food: [
-        'Vada pav trail — from Ashok Vada Pav to Shivaji Park, ending at Café Madras idli',
-        'Lunch at Britannia & Co. for berry pulao, evening at Leopold Café',
-        'Kebab walk in Mohammed Ali Road and Khau Galli at Ghatkopar',
-        'Brunch at The Table, Colaba and seafood dinner at Trishna',
-        'Sunday Khotachiwadi homestay breakfast and Mangalorean lunch at Hotel Deluxe',
-        'Irani café tour — Café Irani Chaii, Lucky, and Stadium Café near Churchgate',
-        'Maharashtra thali at Aaswad in Dadar and kokum sherbet at Crawford Market',
-      ],
-      nature: [
-        'Sanjay Gandhi National Park lion and leopard safari and Kanheri Caves hike',
-        'Flamingo watching at Sewri mudflats and Thane creek mangroves',
-        'Powai Lake birdwatching and Aarey Colony butterfly trail',
-        'Elephanta Island nature walk and tide pool exploration at Versova',
-        'Tungareshwar Wildlife Sanctuary trek and waterfall photography season',
-        'Mangrove boardwalk at Vikhroli and migratory bird counting at Bhandup pumping station',
-        'Dawn walk at Goregaon Film City lake and dusk photography at Bandra fort shoreline',
-      ],
-    },
-  };
-
-  // Generic fallback itinerary based on style
-  const genericByStyle = {
-    adventure: [
-      `Arrive in ${destination} — check in and orientation trek to local viewpoint`,
-      `White-water rafting on the nearest river followed by zip-line canopy tour`,
-      `Rock climbing and rappelling at a nearby valley; evening bonfire`,
-      `Mountain biking trail through scenic countryside and wildlife spotting`,
-      `Paragliding at sunrise launch site and waterfall hike in the afternoon`,
-      `Kayaking and canyoning full-day excursion outside ${destination}`,
-      `Departure day — sunrise hike to a panoramic summit before check-out`,
-    ],
-    relaxation: [
-      `Check in, spa welcome ritual, and sunset stroll through ${destination} old town`,
-      `Yoga at dawn, leisurely breakfast, and afternoon at a wellness retreat`,
-      `Hot spring soak or hammam and a curated garden walk`,
-      `Lazy lake or beach day with a book; candlelight dinner`,
-      `Guided meditation session followed by a rooftop dinner experience`,
-      `Leisure cruise or boat ride and evening live acoustic music`,
-      `Breakfast in bed, slow morning market visit, and farewell high tea`,
-    ],
-    cultural: [
-      `Arrive in ${destination} — walking tour of the historic old quarter and local museum`,
-      `Visit heritage temples or colonial architecture; traditional craft workshop`,
-      `Guided archaeological site tour and local performing arts evening`,
-      `Regional cuisine cooking class and visit to the central bazaar`,
-      `Cultural centre tour and meeting a local artisan community`,
-      `Folklore storytelling experience and visit to a heritage mansion`,
-      `Morning at a weekly market; farewell cultural show or concert`,
-    ],
-    food: [
-      `Arrive in ${destination} — street food welcome walk and iconic snack tasting`,
-      `Breakfast at the best local café; seafood or regional feast for lunch`,
-      `Cooking class learning two traditional dishes; local spice market visit`,
-      `Food truck crawl or night market; craft brewery or winery tour`,
-      `Farm-to-table lunch experience; fine dining at a top-rated local restaurant`,
-      `Chaat and roadside delicacies tour; visit to the wholesale food market at dawn`,
-      `Final breakfast at the most iconic local eatery; sweet treat souvenir shopping`,
-    ],
-    nature: [
-      `Arrive in ${destination} — evening nature walk and birdwatching at the nearby sanctuary`,
-      `Guided wildlife safari or forest trail at sunrise; butterfly garden visit`,
-      `Waterfall hike and river swim; campfire cooking under the stars`,
-      `Botanical garden tour and endemic plant identification walk`,
-      `River kayaking and wetland photography golden hour session`,
-      `Mountain or valley trek with packed lunch; star-gazing at night`,
-      `Departure day — sunrise at a scenic viewpoint with local naturalist guide`,
-    ],
-  };
-
-  // Pick template or fallback
-  let dayPool;
-  const destKey = Object.keys(templates).find((k) => dest.includes(k));
-  if (destKey && templates[destKey][style]) {
-    dayPool = templates[destKey][style];
-  } else {
-    dayPool = genericByStyle[style] || genericByStyle.cultural;
-  }
-
-  return Array.from({ length: num }, (_, i) => ({
-    day: i + 1,
-    title: `Day ${i + 1}`,
-    activities: dayPool[i] || `Explore ${destination} at your own pace — visit local markets and hidden gems.`,
-  }));
-}
-
-const DAY_COLORS = [
-  'from-brand-600 to-accent-500',
-  'from-accent-500 to-brand-500',
-  'from-brand-500 to-brand-700',
-  'from-accent-600 to-accent-400',
-  'from-brand-700 to-accent-600',
-  'from-accent-400 to-brand-600',
-  'from-brand-600 to-brand-400',
-];
-
-const DAY_PART_LABELS = ['Morning', 'Afternoon', 'Evening'];
-
-function formatTimelineActivities(activityText) {
-  const cleaned = (activityText || '').trim();
-  if (!cleaned) return [{ label: 'Plan', text: 'Explore local highlights.' }];
-
-  const parts = cleaned
-    .split(/\s*—\s*|\s*;\s*|,\s*|\s+and\s+/)
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .slice(0, 3);
-
-  if (parts.length <= 1) {
-    return [{ label: 'Plan', text: parts[0] || cleaned }];
-  }
-
-  return parts.map((part, index) => ({
-    label: DAY_PART_LABELS[index] || `Part ${index + 1}`,
-    text: part.charAt(0).toUpperCase() + part.slice(1),
-  }));
-}
-
-const STORAGE_KEY = 'safarai_trips';
 
 function TripPlanner() {
-  usePageMeta('Trip Planner | SafarAI', 'Generate AI-powered multi-day travel itineraries with SafarAI.');
+  usePageMeta(
+    'Trip Planner | SafarAI',
+    'Generate AI-powered multi-day travel itineraries with SafarAI.'
+  );
 
   const [destination, setDestination] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [style, setStyle] = useState('cultural');
+  const [itinerary, setItinerary] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedMsg, setSavedMsg] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleDestinationChange = async (value) => {
+  setDestination(value);
+  setActiveSuggestion(-1); // ← resets arrow selection on new typing
+  if (value.trim().length >= 2) {
+    const result = await searchCities(value);
+    if (result.success && result.data.length > 0) {
+      setSuggestions(result.data);
+      setShowSuggestions(true);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  } else {
+    setSuggestions([]);
+    setShowSuggestions(false);
+  }
+};
+
+  const handleSuggestionClick = (city) => {
+    setDestination(city.display_name || city.name);
+    setSuggestions([]);
+    setShowSuggestions(false);
+  };
 
   const calcDays = () => {
     if (!startDate || !endDate) return 0;
@@ -284,237 +65,395 @@ function TripPlanner() {
   const formatDisplayDate = (dateStr) => {
     if (!dateStr) return '';
     return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', {
-      day: 'numeric', month: 'short', year: 'numeric',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
     });
   };
-  const [itinerary, setItinerary] = useState(null);
-  const [hasGenerated, setHasGenerated] = useState(false);
-  const [savedMsg, setSavedMsg] = useState(false);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     const days = calcDays();
     if (!destination.trim() || days <= 0) return;
-    const result = generateItinerary(destination, String(days), style);
-    setItinerary(result);
-    setHasGenerated(true);
+    setIsGenerating(true);
+    setItinerary(null);
+    setError('');
     setSavedMsg(false);
-  };
 
-  const handleSaveTrip = () => {
-    if (!itinerary) return;
-    const days = calcDays();
-    const trip = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      destination: destination.trim(),
-      startDate,
-      endDate,
-      days,
-      travelStyle: style,
-      itinerary,
-      dateCreated: new Date().toISOString(),
-    };
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      const existing = stored ? JSON.parse(stored) : [];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([...existing, trip]));
-      setSavedMsg(true);
-    } catch {
-      // localStorage unavailable
+    const selectedStyle = STYLE_OPTIONS.find(s => s.value === style);
+
+    const prompt = `Create a detailed ${days}-day travel itinerary for ${destination.trim()}.
+Travel style: ${selectedStyle?.label} — ${selectedStyle?.desc}
+Travel dates: ${formatDisplayDate(startDate)} to ${formatDisplayDate(endDate)}
+
+Format the response exactly like this for each day:
+## Day 1 — [Creative theme for the day]
+**Morning:** [Specific activity with real place names and details]
+**Afternoon:** [Specific activity with real place names and details]
+**Evening:** [Specific activity with real place names and details]
+**🍽️ Food tip:** [Specific local dish and restaurant name to try]
+**💡 Pro tip:** [One practical travel tip for this day]
+
+Continue this exact format for all ${days} days. Use real place names, specific restaurant recommendations, and genuinely useful tips. Make it feel like advice from a local expert.`;
+
+    const response = await generateAITravelResponse(prompt);
+    if (response) {
+      setItinerary(response);
+    } else {
+      setError('Something went wrong. Please try again.');
     }
+    setIsGenerating(false);
   };
 
-  const inputClass =
-    'w-full rounded-xl border border-brand-100 bg-white/80 px-4 py-2.5 text-sm text-ink placeholder-slate-400 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200 transition';
-  const labelClass = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500';
+  const handleSaveTrip = async () => {
+    if (!itinerary) return;
+    setIsSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      const trip = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        destination: destination.trim(),
+        startDate,
+        endDate,
+        days: calcDays(),
+        travelStyle: style,
+        itinerary,
+        dateCreated: new Date().toISOString(),
+      };
+      try {
+        const stored = localStorage.getItem('safarai_trips');
+        const existing = stored ? JSON.parse(stored) : [];
+        localStorage.setItem('safarai_trips', JSON.stringify([...existing, trip]));
+        setSavedMsg(true);
+      } catch {
+        setError('Could not save trip. Please try again.');
+      }
+      setIsSaving(false);
+      return;
+    }
+
+    const { error: saveError } = await supabase
+      .from('itineraries')
+      .insert([{
+        user_id: user.id,
+        destination: destination.trim(),
+        days: calcDays(),
+        travel_style: style,
+        content: itinerary,
+        estimated_budget: 0,
+        currency: 'INR',
+      }]);
+
+    if (saveError) {
+      setError('Could not save to database. Please try again.');
+    } else {
+      setSavedMsg(true);
+    }
+    setIsSaving(false);
+  };
+
+  const selectedStyleOption = STYLE_OPTIONS.find(s => s.value === style);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+
       {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-ink">AI Trip Itinerary Generator</h1>
-        <p className="mt-2 text-slate-600">Plan your perfect multi-day trip.</p>
-      </div>
-
-      {/* Travel Command Center */}
-      <SearchPanel />
-
-      {/* Input Form */}
-      <section className="rounded-2xl border border-brand-100 bg-white/90 p-6 shadow-panel">
-        <div className="mb-5 flex items-center gap-3">
-          <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-brand-600 to-accent-500 text-xs font-bold text-white">
+      <div className="rounded-2xl bg-gradient-to-r from-brand-700 to-accent-600 p-8 text-white">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-xs font-bold">
             AI
           </div>
-          <h2 className="text-xl font-bold text-ink">Plan Your Trip</h2>
+          <p className="text-sm font-semibold text-white/80 uppercase tracking-widest">
+            SafarAI Trip Planner
+          </p>
         </div>
+        <h1 className="text-3xl font-bold">Plan Your Perfect Trip</h1>
+        <p className="mt-2 text-white/80">
+          AI-powered itineraries tailored to your style — any destination, any duration.
+        </p>
+      </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="sm:col-span-2 xl:col-span-1">
-            <label className={labelClass}>Destination</label>
+      {/* Input Form */}
+      <section className="rounded-2xl border border-brand-100 bg-white p-6 shadow-panel">
+        <h2 className="text-lg font-bold text-ink mb-5">Trip Details</h2>
+
+        <div className="grid gap-5">
+
+          {/* Row 1: Destination */}
+          <div className="relative">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-400">
+              📍 Destination
+            </label>
             <input
               type="text"
-              placeholder="e.g. Goa, Delhi, Mumbai"
+              placeholder="Where do you want to go? e.g. Goa, Tokyo, Paris"
               value={destination}
-              onChange={(e) => setDestination(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
-              className={inputClass}
+              onChange={(e) => handleDestinationChange(e.target.value)}
+              onKeyDown={(e) => {
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    setActiveSuggestion(prev =>
+      prev < suggestions.length - 1 ? prev + 1 : prev
+    );
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    setActiveSuggestion(prev => prev > 0 ? prev - 1 : 0);
+  } else if (e.key === 'Enter') {
+    if (activeSuggestion >= 0 && suggestions[activeSuggestion]) {
+      handleSuggestionClick(suggestions[activeSuggestion]);
+      setActiveSuggestion(-1);
+    } else {
+      handleGenerate();
+    }
+  } else if (e.key === 'Escape') {
+    setShowSuggestions(false);
+    setActiveSuggestion(-1);
+  }
+}}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+              autoComplete="off"
+              className="w-full rounded-xl border-2 border-brand-100 bg-white px-4 py-3 text-sm text-ink placeholder-slate-300 outline-none focus:border-brand-400 transition"
             />
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-brand-100 rounded-xl shadow-xl overflow-hidden">
+                {suggestions.map((city, index) => (
+  <button
+    key={index}
+    type="button"
+    onMouseDown={() => handleSuggestionClick(city)}
+    onMouseEnter={() => setActiveSuggestion(index)}
+    className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between border-b border-slate-50 last:border-0 transition ${
+      activeSuggestion === index
+        ? 'bg-brand-50 border-l-2 border-brand-500'
+        : 'hover:bg-brand-50'
+    }`}
+  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">📍</span>
+                      <span className="font-semibold text-ink">
+                        {city.display_name || city.name}
+                      </span>
+                    </div>
+                    <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                      India
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <div>
-            <label className={labelClass}>Start Date</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className={inputClass}
-            />
+
+          {/* Row 2: Dates */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-400">
+                📅 Start Date
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full rounded-xl border-2 border-brand-100 bg-white px-4 py-3 text-sm text-ink outline-none focus:border-brand-400 transition cursor-pointer"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-400">
+                📅 End Date
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                min={startDate || undefined}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full rounded-xl border-2 border-brand-100 bg-white px-4 py-3 text-sm text-ink outline-none focus:border-brand-400 transition cursor-pointer"
+              />
+            </div>
           </div>
+
+          {/* Duration pill */}
+          {calcDays() > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 border border-brand-100 px-4 py-1.5 text-xs font-semibold text-brand-700">
+                🗓️ {calcDays()} Day{calcDays() !== 1 ? 's' : ''} Trip
+              </span>
+              <span className="text-xs text-slate-400">
+                {formatDisplayDate(startDate)} → {formatDisplayDate(endDate)}
+              </span>
+            </div>
+          )}
+
+          {startDate && endDate && calcDays() <= 0 && (
+            <p className="text-xs font-semibold text-red-500">
+              ⚠️ End date must be on or after the start date.
+            </p>
+          )}
+
+          {/* Row 3: Travel Style */}
           <div>
-            <label className={labelClass}>End Date</label>
-            <input
-              type="date"
-              value={endDate}
-              min={startDate || undefined}
-              onChange={(e) => setEndDate(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Travel Style</label>
-            <select
-              value={style}
-              onChange={(e) => setStyle(e.target.value)}
-              className={inputClass}
-            >
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-slate-400">
+              🎯 Travel Style
+            </label>
+            <div className="grid grid-cols-5 gap-2">
               {STYLE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {STYLE_ICONS[opt.value]} {opt.label}
-                </option>
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setStyle(opt.value)}
+                  className={`flex flex-col items-center gap-1 rounded-xl border-2 p-3 text-center transition ${
+                    style === opt.value
+                      ? 'border-brand-500 bg-brand-50 text-brand-700'
+                      : 'border-slate-100 bg-white text-slate-500 hover:border-brand-200 hover:bg-brand-50'
+                  }`}
+                >
+                  <span className="text-xl">{opt.icon}</span>
+                  <span className="text-xs font-semibold leading-tight">{opt.label}</span>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
+
         </div>
 
-        {startDate && endDate && calcDays() <= 0 && (
-          <p className="mt-3 text-xs font-semibold text-red-500">End date must be on or after the start date.</p>
+        {error && (
+          <p className="mt-4 text-xs font-semibold text-red-500">⚠️ {error}</p>
         )}
+
         <button
           type="button"
           onClick={handleGenerate}
-          disabled={!destination.trim() || calcDays() <= 0}
-          className="interactive mt-5 rounded-full bg-gradient-to-r from-brand-600 to-accent-500 px-6 py-2.5 text-sm font-semibold text-white shadow-float hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!destination.trim() || calcDays() <= 0 || isGenerating}
+          className="mt-6 w-full rounded-xl bg-gradient-to-r from-brand-600 to-accent-500 px-6 py-3.5 text-sm font-bold text-white shadow-float hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 transition"
         >
-          Generate Itinerary
+          {isGenerating
+            ? '✨ Generating your perfect itinerary...'
+            : `Generate ${calcDays() > 0 ? `${calcDays()}-Day ` : ''}${selectedStyleOption?.icon} ${selectedStyleOption?.label} Itinerary`}
         </button>
       </section>
 
+      {/* Loading State */}
+      {isGenerating && (
+        <div className="rounded-2xl border border-brand-100 bg-white p-10 text-center shadow-panel">
+          <p className="text-4xl animate-bounce">✈️</p>
+          <p className="mt-4 text-base font-bold text-brand-700">
+            Planning your trip to {destination}...
+          </p>
+          <p className="mt-1 text-sm text-slate-400">
+            SafarAI is crafting a personalised {selectedStyleOption?.label} itinerary for you
+          </p>
+          <div className="mt-4 flex justify-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-brand-400 animate-bounce" style={{animationDelay: '0ms'}}></span>
+            <span className="h-2 w-2 rounded-full bg-brand-400 animate-bounce" style={{animationDelay: '150ms'}}></span>
+            <span className="h-2 w-2 rounded-full bg-brand-400 animate-bounce" style={{animationDelay: '300ms'}}></span>
+          </div>
+        </div>
+      )}
+
       {/* Itinerary Results */}
-      {itinerary && (
+      {itinerary && !isGenerating && (
         <section className="space-y-4">
-          {/* Trip Summary Card */}
-          <div className="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 via-white to-accent-50 p-5 shadow-panel">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-600">Your Trip</p>
-            <h2 className="mt-2 text-2xl font-bold text-ink">Trip to {destination.trim()}</h2>
-            <div className="mt-3 flex flex-wrap gap-3">
-              <div className="rounded-xl border border-brand-100 bg-white px-4 py-2 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Travel Dates</p>
-                <p className="mt-0.5 text-sm font-bold text-ink">
-                  {formatDisplayDate(startDate)} → {formatDisplayDate(endDate)}
+
+          {/* Trip Summary Banner */}
+          <div className="rounded-2xl bg-gradient-to-r from-brand-700 to-accent-600 p-6 text-white">
+            <div className="flex items-start justify-between flex-wrap gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-white/70">
+                  Your Itinerary
                 </p>
+                <h2 className="mt-1 text-2xl font-bold">
+                  {destination.trim()} {selectedStyleOption?.icon}
+                </h2>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">
+                    📅 {formatDisplayDate(startDate)} → {formatDisplayDate(endDate)}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">
+                    🗓️ {calcDays()} Days
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">
+                    {selectedStyleOption?.icon} {selectedStyleOption?.label}
+                  </span>
+                </div>
               </div>
-              <div className="rounded-xl border border-brand-100 bg-white px-4 py-2 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Duration</p>
-                <p className="mt-0.5 text-sm font-bold text-ink">{calcDays()} Day{calcDays() !== 1 ? 's' : ''} Trip</p>
-              </div>
-              <div className="rounded-xl border border-brand-100 bg-white px-4 py-2 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Travel Style</p>
-                <p className="mt-0.5 text-sm font-bold text-ink">
-                  {STYLE_ICONS[style]} {STYLE_OPTIONS.find((s) => s.value === style)?.label}
-                </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleSaveTrip}
+                  disabled={savedMsg || isSaving}
+                  className="rounded-xl bg-white px-4 py-2 text-xs font-bold text-brand-700 hover:bg-brand-50 disabled:opacity-70 transition"
+                >
+                  {isSaving ? 'Saving...' : savedMsg ? '✓ Saved!' : '💾 Save Trip'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setItinerary(null); setSavedMsg(false); setError(''); }}
+                  className="rounded-xl bg-white/20 px-4 py-2 text-xs font-bold text-white hover:bg-white/30 transition"
+                >
+                  ✕ Clear
+                </button>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-bold text-ink">
-                {STYLE_ICONS[style]}{' '}
-                {calcDays() === 1 ? '1-Day' : `${calcDays()}-Day`}{' '}
-                {STYLE_OPTIONS.find((s) => s.value === style)?.label} Itinerary
-              </h2>
-              <p className="text-sm text-slate-500">
-                Destination:{' '}
-                <span className="font-semibold text-brand-700">
-                  {destination.trim()}
-                </span>
+          {/* Itinerary Content */}
+          <div className="rounded-2xl border border-brand-100 bg-white p-6 shadow-panel">
+            <ReactMarkdown
+              components={{
+                h2: ({ children }) => (
+                  <div className="mt-8 first:mt-0">
+                    <div className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-accent-500 px-4 py-2 text-sm font-bold text-white mb-4">
+                      {children}
+                    </div>
+                  </div>
+                ),
+                h3: ({ children }) => (
+                  <h3 className="mt-4 text-base font-bold text-ink">{children}</h3>
+                ),
+                strong: ({ children }) => (
+                  <strong className="font-bold text-brand-700">{children}</strong>
+                ),
+                p: ({ children }) => (
+                  <p className="mb-3 text-sm leading-relaxed text-slate-600 pl-2 border-l-2 border-brand-100">
+                    {children}
+                  </p>
+                ),
+                ul: ({ children }) => (
+                  <ul className="ml-4 mb-3 list-disc space-y-1">{children}</ul>
+                ),
+                ol: ({ children }) => (
+                  <ol className="ml-4 mb-3 list-decimal space-y-1">{children}</ol>
+                ),
+                li: ({ children }) => (
+                  <li className="text-sm text-slate-600">{children}</li>
+                ),
+              }}
+            >
+              {itinerary}
+            </ReactMarkdown>
+          </div>
+
+          {!savedMsg && (
+            <div className="rounded-xl border border-brand-100 bg-brand-50 p-4 text-center">
+              <p className="text-xs text-brand-700 font-semibold">
+                💡 Log in to save this itinerary to your account and access it anytime
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={handleSaveTrip}
-                disabled={savedMsg}
-                className="interactive rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-2 text-xs font-semibold text-white shadow-float transition-all duration-200 hover:scale-[1.02] disabled:cursor-default disabled:opacity-70"
-              >
-                {savedMsg ? '✓ Saved!' : 'Save Trip'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setItinerary(null);
-                  setHasGenerated(false);
-                  setSavedMsg(false);
-                }}
-                className="interactive rounded-full border border-brand-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:border-brand-300 hover:bg-brand-50"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
+          )}
 
-          <div className="relative border-l border-brand-200 pl-6">
-            {itinerary.map((item, index) => {
-              const dayActivities = formatTimelineActivities(item.activities);
-              return (
-                <article
-                  key={item.day}
-                  className={`relative ${index === itinerary.length - 1 ? '' : 'pb-6'}`}
-                >
-                  <div
-                    className={`absolute -left-[2.1rem] top-0 inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br ${DAY_COLORS[index % DAY_COLORS.length]} text-sm font-bold text-white shadow-md`}
-                  >
-                    D{item.day}
-                  </div>
-
-                  <div className="rounded-2xl border border-brand-100 bg-white/90 p-5 shadow-panel">
-                    <h3 className="text-base font-bold text-ink">{item.title}</h3>
-                    <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-600">
-                      {dayActivities.map((activity, activityIndex) => (
-                        <li key={`${item.day}-${activityIndex}`} className="flex items-start gap-2">
-                          <span className="mt-1 text-brand-500">•</span>
-                          <span>
-                            <span className="font-semibold text-ink">{activity.label}:</span>{' '}
-                            {activity.text}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
         </section>
       )}
 
-      {/* Empty state hint */}
-      {!hasGenerated && (
-        <div className="rounded-2xl border border-dashed border-brand-200 bg-white/50 p-8 text-center">
-          <p className="text-3xl">🗺️</p>
-          <p className="mt-3 text-sm font-semibold text-slate-500">
-            Enter a destination above and click <span className="text-brand-700">Generate Itinerary</span> to get started.
+      {/* Empty State */}
+      {!itinerary && !isGenerating && (
+        <div className="rounded-2xl border-2 border-dashed border-brand-100 bg-white p-12 text-center">
+          <p className="text-5xl mb-4">🗺️</p>
+          <h3 className="text-base font-bold text-ink mb-2">Ready to plan your trip?</h3>
+          <p className="text-sm text-slate-400">
+            Enter a destination, pick your dates and travel style above — SafarAI will create a personalised day-by-day itinerary for you.
           </p>
         </div>
       )}
+
     </div>
   );
 }
