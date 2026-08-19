@@ -74,12 +74,20 @@ const sliderImages = [
   },
 ];
 
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../services/supabase';
+
 function AuthPage() {
   usePageMeta('Auth | SafarAI', 'Create an account or log in to SafarAI.');
+  const navigate = useNavigate();
 
+  const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [loading, setLoading] = useState(false);
   const [formValues, setFormValues] = useState({
     firstName: '',
     lastName: '',
@@ -102,6 +110,89 @@ function AuthPage() {
 
     return () => window.clearInterval(intervalId);
   }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (!formValues.email || !formValues.password) {
+      setErrorMessage('Please fill in all required fields.');
+      return;
+    }
+
+    if (!isLogin && (!formValues.firstName || !formValues.lastName)) {
+      setErrorMessage('Please enter your first and last name.');
+      return;
+    }
+
+    if (!isLogin && !agreed) {
+      setErrorMessage('You must agree to the Terms & Conditions.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        // Sign In
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: formValues.email,
+          password: formValues.password,
+        });
+
+        if (error) throw error;
+
+        setSuccessMessage('Logged in successfully! Redirecting...');
+        setTimeout(() => {
+          navigate('/');
+        }, 1500);
+      } else {
+        // Sign Up
+        const { data, error } = await supabase.auth.signUp({
+          email: formValues.email,
+          password: formValues.password,
+          options: {
+            data: {
+              first_name: formValues.firstName,
+              last_name: formValues.lastName,
+            },
+          },
+        });
+
+        if (error) throw error;
+
+        // If email confirmation is enabled, user needs to check email
+        if (data?.user && data?.session === null) {
+          setSuccessMessage('Registration successful! Please check your email to verify your account.');
+        } else {
+          setSuccessMessage('Account created and logged in successfully! Redirecting...');
+          setTimeout(() => {
+            navigate('/');
+          }, 1500);
+        }
+      }
+    } catch (error) {
+      setErrorMessage(error.message || 'An error occurred during authentication.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOAuthLogin = async (provider) => {
+    setErrorMessage('');
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+      if (error) throw error;
+    } catch (error) {
+      setErrorMessage(error.message || `Failed to log in with ${provider}.`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#201d2f] px-4 py-5 md:px-7 md:py-7">
@@ -154,41 +245,67 @@ function AuthPage() {
 
         <section className="flex items-center justify-center p-6 sm:p-8 md:p-10 lg:p-12">
           <div className="w-full max-w-[430px] text-white">
-            <h1 className="text-5xl font-semibold tracking-tight text-white">Create an account</h1>
-            <p className="mt-4 text-base text-slate-300">
-              Already have an account?{' '}
-              <button type="button" className="font-medium text-[#b3a8ff] underline-offset-2 hover:underline">
-                Log in
+            <h1 className="text-4xl font-semibold tracking-tight text-white">
+              {isLogin ? 'Log in to SafarAI' : 'Create an account'}
+            </h1>
+            <p className="mt-3 text-sm text-slate-300">
+              {isLogin ? "Don't have an account? " : 'Already have an account? '}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setErrorMessage('');
+                  setSuccessMessage('');
+                }}
+                className="font-medium text-[#b3a8ff] underline-offset-2 hover:underline"
+              >
+                {isLogin ? 'Sign up' : 'Log in'}
               </button>
             </p>
 
-            <form className="mt-8 space-y-4" onSubmit={(e) => e.preventDefault()}>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="relative">
-                  <input
-                    className={floatingInputClass}
-                    type="text"
-                    placeholder=" "
-                    value={formValues.firstName}
-                    onChange={(event) => setFormValues((prev) => ({ ...prev, firstName: event.target.value }))}
-                  />
-                  <label className="pointer-events-none absolute left-4 top-2 text-xs text-slate-400 transition-all duration-200 peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-[15px] peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-[#b3a8ff]">
-                    First Name
-                  </label>
-                </div>
-                <div className="relative">
-                  <input
-                    className={floatingInputClass}
-                    type="text"
-                    placeholder=" "
-                    value={formValues.lastName}
-                    onChange={(event) => setFormValues((prev) => ({ ...prev, lastName: event.target.value }))}
-                  />
-                  <label className="pointer-events-none absolute left-4 top-2 text-xs text-slate-400 transition-all duration-200 peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-[15px] peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-[#b3a8ff]">
-                    Last Name
-                  </label>
-                </div>
+            {errorMessage && (
+              <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                {errorMessage}
               </div>
+            )}
+
+            {successMessage && (
+              <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+                {successMessage}
+              </div>
+            )}
+
+            <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+              {!isLogin && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="relative">
+                    <input
+                      className={floatingInputClass}
+                      type="text"
+                      placeholder=" "
+                      value={formValues.firstName}
+                      onChange={(event) => setFormValues((prev) => ({ ...prev, firstName: event.target.value }))}
+                      required
+                    />
+                    <label className="pointer-events-none absolute left-4 top-2 text-xs text-slate-400 transition-all duration-200 peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-[15px] peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-[#b3a8ff]">
+                      First Name
+                    </label>
+                  </div>
+                  <div className="relative">
+                    <input
+                      className={floatingInputClass}
+                      type="text"
+                      placeholder=" "
+                      value={formValues.lastName}
+                      onChange={(event) => setFormValues((prev) => ({ ...prev, lastName: event.target.value }))}
+                      required
+                    />
+                    <label className="pointer-events-none absolute left-4 top-2 text-xs text-slate-400 transition-all duration-200 peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-[15px] peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-[#b3a8ff]">
+                      Last Name
+                    </label>
+                  </div>
+                </div>
+              )}
 
               <div className="relative">
                 <input
@@ -197,6 +314,7 @@ function AuthPage() {
                   placeholder=" "
                   value={formValues.email}
                   onChange={(event) => setFormValues((prev) => ({ ...prev, email: event.target.value }))}
+                  required
                 />
                 <label className="pointer-events-none absolute left-4 top-2 text-xs text-slate-400 transition-all duration-200 peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-[15px] peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-[#b3a8ff]">
                   Email
@@ -211,6 +329,7 @@ function AuthPage() {
                     placeholder=" "
                     value={formValues.password}
                     onChange={(event) => setFormValues((prev) => ({ ...prev, password: event.target.value }))}
+                    required
                   />
                   <label className="pointer-events-none absolute left-4 top-2 text-xs text-slate-400 transition-all duration-200 peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-[15px] peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-[#b3a8ff]">
                     Password
@@ -224,51 +343,62 @@ function AuthPage() {
                     <EyeIcon visible={showPassword} />
                   </button>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-300">
-                    Password strength: <span className={`font-semibold ${passwordStrength.color}`}>{passwordStrength.label}</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    {Array.from({ length: 4 }, (_, index) => (
-                      <span
-                        key={index}
-                        className={`h-2 w-2 rounded-full ${index < passwordStrength.level ? passwordStrength.dot : 'bg-slate-500/60'}`}
-                      />
-                    ))}
-                  </span>
-                </div>
+                {!isLogin && (
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-300">
+                      Password strength:{' '}
+                      <span className={`font-semibold ${passwordStrength.color}`}>{passwordStrength.label}</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      {Array.from({ length: 4 }, (_, index) => (
+                        <span
+                          key={index}
+                          className={`h-2 w-2 rounded-full ${
+                            index < passwordStrength.level ? passwordStrength.dot : 'bg-slate-500/60'
+                          }`}
+                        />
+                      ))}
+                    </span>
+                  </div>
+                )}
               </div>
 
-              <label className="mt-1 flex items-center gap-3 text-sm text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={agreed}
-                  onChange={(event) => setAgreed(event.target.checked)}
-                  className="h-5 w-5 rounded border-[#524a73] bg-[#f8f8fb] accent-[#f8f8fb]"
-                />
-                <span>
-                  I agree to the{' '}
-                  <button type="button" className="text-slate-200 underline underline-offset-2 hover:text-white">
-                    Terms &amp; Conditions
-                  </button>
-                </span>
-              </label>
+              {!isLogin && (
+                <label className="mt-1 flex items-center gap-3 text-sm text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={agreed}
+                    onChange={(event) => setAgreed(event.target.checked)}
+                    className="h-5 w-5 rounded border-[#524a73] bg-[#f8f8fb] accent-[#7f73d4]"
+                  />
+                  <span>
+                    I agree to the{' '}
+                    <button type="button" className="text-slate-200 underline underline-offset-2 hover:text-white">
+                      Terms &amp; Conditions
+                    </button>
+                  </span>
+                </label>
+              )}
 
               <button
                 type="submit"
-                className="mt-1 w-full rounded-xl bg-gradient-to-r from-[#6d58d5] to-[#745fd9] px-5 py-3.5 text-lg font-semibold text-white shadow-lg transition hover:brightness-110"
+                disabled={loading}
+                className="mt-1 w-full rounded-xl bg-gradient-to-r from-[#6d58d5] to-[#745fd9] px-5 py-3.5 text-lg font-semibold text-white shadow-lg transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Create account
+                {loading ? 'Processing...' : isLogin ? 'Log in' : 'Create account'}
               </button>
 
               <div className="relative py-2 text-center">
                 <div className="absolute inset-x-0 top-1/2 h-px bg-[#4a4463]" />
-                <span className="relative z-10 bg-[#2a273b] px-4 text-sm text-slate-400">Or register with</span>
+                <span className="relative z-10 bg-[#2a273b] px-4 text-sm text-slate-400">
+                  {isLogin ? 'Or sign in with' : 'Or register with'}
+                </span>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <button
                   type="button"
+                  onClick={() => handleOAuthLogin('google')}
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#5a5475] bg-transparent px-4 py-3 text-base font-semibold text-white transition hover:bg-white/5"
                 >
                   <GoogleIcon />
@@ -276,6 +406,7 @@ function AuthPage() {
                 </button>
                 <button
                   type="button"
+                  onClick={() => handleOAuthLogin('apple')}
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#5a5475] bg-transparent px-4 py-3 text-base font-semibold text-white transition hover:bg-white/5"
                 >
                   <AppleIcon />

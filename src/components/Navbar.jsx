@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import BrandLogo from './BrandLogo';
+import { supabase } from '../services/supabase';
 
 const navItems = [
   { to: '/', label: 'Home' },
@@ -15,13 +16,36 @@ const navItems = [
 
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 14);
     onScroll();
     window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
+    
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Listen to changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      subscription.unsubscribe();
+    };
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Error logging out:', err);
+    }
+  };
 
   return (
     <header
@@ -55,13 +79,27 @@ function Navbar() {
           ))}
         </ul>
 
-        <div className="justify-self-center sm:justify-self-end">
-          <Link
-            to="/auth"
-            className="interactive inline-flex rounded-full border border-brand-200 bg-white/90 px-4 py-2 text-sm font-semibold text-brand-700 shadow-md transition-all duration-200 hover:scale-[1.02] hover:border-brand-300 hover:bg-white hover:text-brand-600"
-          >
-            Login
-          </Link>
+        <div className="justify-self-center sm:justify-self-end flex items-center gap-3">
+          {user ? (
+            <>
+              <span className="text-sm text-brand-900 font-medium bg-brand-50/80 border border-brand-100 rounded-full px-3 py-1 shadow-sm">
+                Hi, {user.user_metadata?.first_name || user.email.split('@')[0]}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="interactive inline-flex rounded-full border border-red-200 bg-white/90 px-4 py-2 text-sm font-semibold text-red-600 shadow-md transition-all duration-200 hover:scale-[1.02] hover:border-red-300 hover:bg-red-50"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/auth"
+              className="interactive inline-flex rounded-full border border-brand-200 bg-white/90 px-4 py-2 text-sm font-semibold text-brand-700 shadow-md transition-all duration-200 hover:scale-[1.02] hover:border-brand-300 hover:bg-white hover:text-brand-600"
+            >
+              Login
+            </Link>
+          )}
         </div>
       </nav>
     </header>
