@@ -15,6 +15,7 @@ SafarAI is a premium product of **TravelCore Technologies**, operating alongside
 ## 🗺️ Project Architecture & Structure
 
 This repository is split into two primary components:
+
 1.  **Vite + React SPA (Root)**: The high-performance client dashboard, safety portal, and AI chat client.
 2.  **Next.js Web Application (`/safarai-app`)**: The server-rendered portal optimized for community sharing, dynamic SEO landing pages, and metadata generation.
 
@@ -39,22 +40,28 @@ SafarAI-App/
 ## ⚡ Core Pillars & Capabilities
 
 ### 🤖 1. Context-Aware AI Travel Assistant
-Leverages the **Llama 3.3 70B** model via the **Groq SDK** to run low-latency, context-sensitive reasoning engines. It plans complete multi-day itineraries, explains cultural taboos, translates key phrases, and dynamically suggests local spots.
+
+Leverages the **openai/gpt-oss-120b** model via the **Groq SDK** to run low-latency, context-sensitive reasoning engines. It plans complete multi-day itineraries, explains cultural taboos, translates key phrases, and dynamically suggests local spots.
 
 ### 🛡️ 2. Safety intelligence Core
+
 An interactive toolkit featuring:
-*   **Geo-Safety Scores**: Aggregates community feedback and local advisories.
-*   **Emergency Toolkit**: Instant access to local emergency contacts, embassy locations, and offline-compatible SOS protocols.
-*   **Safe Path Finder**: Dynamic route adjustments to prioritize well-lit, populated, and highly rated transit paths.
+
+- **Geo-Safety Scores**: Aggregates community feedback and local advisories.
+- **Emergency Toolkit**: Instant access to local emergency contacts, embassy locations, and offline-compatible SOS protocols.
+- **Safe Path Finder**: Dynamic route adjustments to prioritize well-lit, populated, and highly rated transit paths.
 
 ### 🚆 3. Transit & Rail Integration (Powered by Railverse)
+
 Deep coordination with **Railverse** allows travelers to:
-*   Correlate flight schedules, bus routes, and train services.
-*   Query real-time seat availability, live platform coordinates, and delay metrics.
+
+- Correlate flight schedules, bus routes, and train services.
+- Query real-time seat availability, live platform coordinates, and delay metrics.
 
 ### 💰 4. Predictive Budget & Expense Calculator
-*   **Cost Projection**: Learns from community-pooled travel data to forecast destination costs.
-*   **Smart Categorization**: Track food, transit, logging, and activities with automatic currency conversion.
+
+- **Cost Projection**: Learns from community-pooled travel data to forecast destination costs.
+- **Smart Categorization**: Track food, transit, logging, and activities with automatic currency conversion.
 
 ---
 
@@ -66,29 +73,33 @@ We are actively designing the next phase of SafarAI. Our roadmap includes key mi
 graph TD
     A[Phase 1: Foundation] --> B[Phase 2: Deep Integrations]
     B --> C[Phase 3: Spatial & Offline AI]
-    
+
     style A fill:#e1f5fe,stroke:#039be5,stroke-width:2px
     style B fill:#e8f5e9,stroke:#43a047,stroke-width:2px
     style C fill:#fff3e0,stroke:#fb8c00,stroke-width:2px
 ```
 
 ### 🛰️ Phase 1: Real-time Sync & Collaborative Lobbies
-*   **Dynamic Group Planning**: Shareable planner lobbies with real-time editing, group voting on locations, and automated expense-splitting calculators.
-*   **Cross-Platform Sync**: Push notifications alerting users to check-in times, delay updates, and safety alerts directly on their mobile devices.
+
+- **Dynamic Group Planning**: Shareable planner lobbies with real-time editing, group voting on locations, and automated expense-splitting calculators.
+- **Cross-Platform Sync**: Push notifications alerting users to check-in times, delay updates, and safety alerts directly on their mobile devices.
 
 ### 🔗 Phase 2: Native Railverse Booking Engine
-*   **One-Click Checkout**: Purchase train, flight, and local transit tickets in a single transaction window.
-*   **Live PNR Tracking**: Push notifications detailing platform updates, train delays, and delay compensation filings.
+
+- **One-Click Checkout**: Purchase train, flight, and local transit tickets in a single transaction window.
+- **Live PNR Tracking**: Push notifications detailing platform updates, train delays, and delay compensation filings.
 
 ### 🌐 Phase 3: Spatial Navigation & Offline-First AI
-*   **On-Device AI Engines**: Download compressed LLMs (like Gemma 2B or Llama 8B) to run entirely offline, ensuring navigation and AI support function without cellular reception.
-*   **AR Destination Overlays**: Point the mobile camera to overlay historical insights, restaurant ratings, and active safety directions onto the physical world.
+
+- **On-Device AI Engines**: Download compressed LLMs (like Gemma 2B or Llama 8B) to run entirely offline, ensuring navigation and AI support function without cellular reception.
+- **AR Destination Overlays**: Point the mobile camera to overlay historical insights, restaurant ratings, and active safety directions onto the physical world.
 
 ---
 
 ## 🚀 Local Installation & Execution
 
 ### 1. Root React Client (SPA)
+
 Ensure you have Node.js (v18+) installed.
 
 ```bash
@@ -105,14 +116,17 @@ cp .env.example .env # or configure the .env template manually
 # Spin up the local development server
 npm run dev
 ```
+
 Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ### 2. Next.js Community Web Portal
+
 ```bash
 cd safarai-app
 npm install
 npm run dev
 ```
+
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
@@ -122,25 +136,26 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 As a private code repo under **TravelCore Technologies**, security and clean history are paramount. Please conform to these guidelines:
 
 1.  **Branch Naming Rules**:
-    *   Features: `feature/name-of-feature`
-    *   Fixes: `fix/name-of-fix`
-    *   Optimizations: `perf/name-of-perf`
+    - Features: `feature/name-of-feature`
+    - Fixes: `fix/name-of-fix`
+    - Optimizations: `perf/name-of-perf`
 2.  **Pull Requests**:
-    *   Target the `main` branch.
-    *   Explain what changed and link any related design issues.
-    *   A minimum of **1 peer review** is required before merging.
+    - Target the `main` branch.
+    - Explain what changed and link any related design issues.
+    - A minimum of **1 peer review** is required before merging.
 3.  **Secrets & Security**:
-    *   Never commit API keys or credentials.
-    *   Ensure all secrets are stored inside your local `.env` which is ignored by Git.
+    - Never commit API keys or credentials.
+    - Ensure all secrets are stored inside your local `.env` which is ignored by Git.
 
 ---
 
 ## 🏢 Corporate & Founder Information
 
-**SafarAI** is a registered product of **TravelCore Technologies Pvt. Ltd.**  
-*   **Founder**: Vishal Singh  
-*   **Sister Platforms**: Railverse  
-*   **Support**: developer@travelcore.com  
+**SafarAI** is a registered product of **TravelCore Technologies Pvt. Ltd.**
+
+- **Founder**: Vishal Singh
+- **Sister Platforms**: Railverse
+- **Support**: developer@travelcore.com
 
 ---
 
