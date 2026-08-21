@@ -1,0 +1,36 @@
+{
+  "name": "safarai-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vite build -c vite.smoke.config.js && node node_modules/.smoke/smoke.js && node node_modules/.smoke/flows.js && node node_modules/.smoke/a11y.js",
+    "images:fetch": "node scripts/fetch-images.mjs",
+    "audit": "node scripts/audit.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.99.2",
+    "groq-sdk": "^1.1.1",
+    "leaflet": "^1.9.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^6.28.1",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "axe-core": "^4.13.0",
+    "jsdom": "^30.0.1",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "vite": "^5.4.11",
+    "puppeteer-core": "^25.8.0"
+  }
+}
