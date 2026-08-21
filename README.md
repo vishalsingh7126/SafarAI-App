@@ -155,7 +155,7 @@ As a private code repo under **TravelCore Technologies**, security and clean his
 
 - **Founder**: Vishal Singh
 - **Sister Platforms**: Railverse
-- **Support**: developer@travelcore.com
+- **Support**: travelcore.auth@gmail.com
 
 ---
 
