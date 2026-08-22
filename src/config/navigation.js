@@ -107,6 +107,12 @@ export const navGroups = [
         description: 'Risk scores, SOS kit and advisories',
         icon: 'shield',
       },
+      {
+        to: '/community',
+        label: 'Community',
+        description: 'Share tips and travel with fellow explorers',
+        icon: 'users',
+      },
     ],
   },
 ];
@@ -134,10 +140,7 @@ export const footerColumns = [
   },
   {
     title: 'Travel & Safety',
-    links: [
-      ...navGroups[2].items.map(({ to, label }) => ({ to, label })),
-      { to: '/community', label: 'Community' },
-    ],
+    links: navGroups[2].items.map(({ to, label }) => ({ to, label })),
   },
 ];
 

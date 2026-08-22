@@ -36,10 +36,15 @@ function ScrollProgress() {
 
 function MegaMenu({ group, open, onOpen, onClose }) {
   const location = useLocation();
+  const menuRef = useRef(null);
   const groupActive = group.items.some((item) => location.pathname === item.to);
+  const menuId = `nav-menu-${group.id}`;
+
+  useOnClickOutside(menuRef, onClose, open);
 
   return (
     <li
+      ref={menuRef}
       className="relative"
       onMouseEnter={onOpen}
       onMouseLeave={onClose}
@@ -48,7 +53,14 @@ function MegaMenu({ group, open, onOpen, onClose }) {
         type="button"
         aria-expanded={open}
         aria-haspopup="true"
+        aria-controls={menuId}
         onClick={() => (open ? onClose() : onOpen())}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            onClose();
+          }
+        }}
         className={cn(
           'inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold transition-colors duration-200',
           groupActive || open
@@ -65,32 +77,58 @@ function MegaMenu({ group, open, onOpen, onClose }) {
       </button>
 
       <div
+        id={menuId}
+        role="menu"
         className={cn(
-          'absolute left-1/2 top-full z-50 w-[26rem] -translate-x-1/2 pt-3 transition-all duration-200',
-          open ? 'visible opacity-100 translate-y-0' : 'invisible -translate-y-1 opacity-0'
+          'absolute left-1/2 top-full z-50 w-[26rem] -translate-x-1/2 pt-3 transition-[opacity,transform,filter] duration-250 ease-smooth',
+          open
+            ? 'visible translate-y-0 scale-100 opacity-100 blur-0'
+            : 'invisible pointer-events-none -translate-y-2 scale-[0.97] opacity-0 blur-[6px]'
         )}
       >
-        <div className="overflow-hidden rounded-2xl border border-line bg-surface-raised p-2 shadow-lift">
-          <p className="px-3 pb-1 pt-2 text-2xs font-bold uppercase tracking-wider text-fg-subtle">
+        <span
+          aria-hidden="true"
+          className="absolute left-1/2 top-[0.4rem] h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-white/20 bg-surface-raised/95 shadow-[-3px_-3px_14px_rgb(99_102_241_/_0.14)]"
+        />
+        <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-surface-raised/90 p-2 shadow-[0_20px_60px_rgb(2_6_23_/_0.28),0_4px_18px_rgb(99_102_241_/_0.1)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/80">
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-brand-400/70 to-transparent"
+          />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -left-12 -top-16 h-32 w-32 rounded-full bg-brand-500/12 blur-3xl"
+          />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-20 -right-8 h-36 w-36 rounded-full bg-cyan-400/10 blur-3xl"
+          />
+          <p className="relative px-3 pb-1 pt-2 text-2xs font-bold uppercase tracking-wider text-fg-subtle">
             {group.description}
           </p>
-          {group.items.map((item) => (
+          {group.items.map((item, index) => (
             <NavLink
               key={item.to}
               to={item.to}
+              role="menuitem"
               onClick={onClose}
+              style={{ transitionDelay: open ? `${70 + index * 45}ms` : '0ms' }}
               className={({ isActive }) =>
                 cn(
-                  'group flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors duration-150',
-                  isActive ? 'bg-brand-50 dark:bg-brand-500/12' : 'hover:bg-surface-muted'
+                  'group relative flex translate-y-0 items-start gap-3 rounded-xl border border-transparent px-3 py-2.5 opacity-100 transition-[background-color,border-color,box-shadow,opacity,transform] duration-200 ease-smooth hover:translate-x-1 hover:border-brand-300/20 hover:bg-gradient-to-r hover:from-brand-500/12 hover:to-blue-500/5 hover:shadow-[0_4px_20px_rgb(99_102_241_/_0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                  open ? 'translate-y-0 opacity-100' : 'translate-y-1.5 opacity-0',
+                  isActive && 'border-brand-300/20 bg-gradient-to-r from-brand-500/12 to-blue-500/5 shadow-[0_4px_20px_rgb(99_102_241_/_0.08)]'
                 )
               }
             >
-              <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 transition-colors duration-150 group-hover:bg-brand-gradient group-hover:text-white dark:bg-brand-500/12 dark:text-brand-300">
+              <span className="relative mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 transition-[background-color,color,box-shadow,transform] duration-200 group-hover:scale-105 group-hover:rotate-[2deg] group-hover:bg-brand-gradient group-hover:text-white group-hover:shadow-[0_0_16px_rgb(99_102_241_/_0.25)] dark:bg-brand-500/12 dark:text-brand-300">
                 <Icon name={item.icon} size="sm" />
+                {location.pathname === item.to && (
+                  <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_10px_rgb(103_232_249_/_0.8)]" />
+                )}
               </span>
               <span className="min-w-0">
-                <span className="flex items-center gap-2 text-sm font-semibold text-fg">
+                <span className="flex items-center gap-2 text-sm font-semibold text-fg transition-colors duration-200 group-hover:text-brand-700 dark:group-hover:text-white">
                   {item.label}
                   {item.badge && (
                     <span className="rounded-full bg-accent-100 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-accent-700 dark:bg-accent-500/20 dark:text-accent-200">
@@ -98,8 +136,11 @@ function MegaMenu({ group, open, onOpen, onClose }) {
                     </span>
                   )}
                 </span>
-                <span className="mt-0.5 block text-xs leading-5 text-fg-muted">{item.description}</span>
+                <span className="mt-0.5 block text-xs leading-5 text-fg-muted transition-colors duration-200 group-hover:text-fg">
+                  {item.description}
+                </span>
               </span>
+              <Icon name="arrowRight" size="xs" className="ml-auto mt-3 shrink-0 -translate-x-1 opacity-0 transition-[opacity,transform] duration-200 group-hover:translate-x-0 group-hover:opacity-60" />
             </NavLink>
           ))}
         </div>
@@ -423,6 +464,17 @@ function Navbar({ onOpenCommand }) {
     setDrawerOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (!openGroup) return undefined;
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setOpenGroup(null);
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [openGroup]);
+
   const closeGroup = useCallback(() => setOpenGroup(null), []);
 
   return (
@@ -445,7 +497,7 @@ function Navbar({ onOpenCommand }) {
             <BrandLogo />
           </Link>
 
-          <ul className="hidden min-w-0 flex-nowrap items-center gap-0.5 overflow-hidden lg:flex xl:gap-1">
+          <ul className="hidden min-w-0 flex-nowrap items-center gap-0.5 overflow-visible lg:flex xl:gap-1">
             <li>
               <NavLink
                 to="/"

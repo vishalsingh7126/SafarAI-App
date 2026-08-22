@@ -3926,7 +3926,7 @@ const destinationImageKeys = {
   "agra": "poi-agra-taj-mahal",
   "delhi": "poi-delhi-red-fort",
   "mumbai": "poi-mumbai-gateway-of-india",
-  "paris": "poi-paris-eiffel-tower",
+  "paris": "dest-paris",
   "london": "poi-london-big-ben",
   "rome": "poi-rome-colosseum",
   "venice": "poi-venice-rialto-bridge",

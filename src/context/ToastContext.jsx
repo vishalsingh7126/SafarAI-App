@@ -24,6 +24,12 @@ const VARIANTS = {
     accent: 'bg-brand-500',
     tone: 'text-brand-600 dark:text-brand-300',
   },
+  apple: {
+    icon: 'info',
+    ring: 'ring-indigo-400/30',
+    accent: 'bg-indigo-400',
+    tone: 'text-indigo-200',
+  },
   loading: {
     icon: 'refresh',
     ring: 'ring-brand-500/25',
@@ -36,15 +42,31 @@ let idCounter = 0;
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
+  const [exiting, setExiting] = useState(() => new Set());
   const timers = useRef(new Map());
+  const exitTimers = useRef(new Map());
 
   const dismiss = useCallback((id) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
     const timer = timers.current.get(id);
     if (timer) {
       clearTimeout(timer);
       timers.current.delete(id);
     }
+    if (exitTimers.current.has(id)) return;
+
+    setExiting((prev) => new Set(prev).add(id));
+    exitTimers.current.set(
+      id,
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((toast) => toast.id !== id));
+        setExiting((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        exitTimers.current.delete(id);
+      }, 180)
+    );
   }, []);
 
   const push = useCallback(
@@ -65,7 +87,11 @@ export function ToastProvider({ children }) {
 
   useEffect(() => {
     const map = timers.current;
-    return () => map.forEach((timer) => clearTimeout(timer));
+    const exitMap = exitTimers.current;
+    return () => {
+      map.forEach((timer) => clearTimeout(timer));
+      exitMap.forEach((timer) => clearTimeout(timer));
+    };
   }, []);
 
   const api = useMemo(
@@ -99,10 +125,19 @@ export function ToastProvider({ children }) {
                   aria-live="polite"
                   className={cn(
                     'pointer-events-auto flex w-full max-w-sm items-start gap-3 overflow-hidden rounded-xl border border-line bg-surface-raised p-3.5 shadow-lift ring-1 animate-slide-down',
-                    variant.ring
+                    variant.ring,
+                    exiting.has(toast.id) && 'animate-toast-out',
+                    toast.variant === 'apple' &&
+                      'border-indigo-300/20 bg-slate-950/90 text-white shadow-[0_18px_50px_rgb(2_6_23_/_0.4),0_0_24px_rgb(99_102_241_/_0.12)] backdrop-blur-xl'
                   )}
                 >
-                  <span className={cn('mt-0.5 rounded-lg bg-surface-muted p-1.5', variant.tone)}>
+                  <span
+                    className={cn(
+                      'mt-0.5 rounded-lg bg-surface-muted p-1.5',
+                      variant.tone,
+                      toast.variant === 'apple' && 'bg-indigo-400/15 text-indigo-200'
+                    )}
+                  >
                     <Icon
                       name={variant.icon}
                       size="sm"
@@ -110,9 +145,13 @@ export function ToastProvider({ children }) {
                     />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-fg">{toast.title}</p>
+                    <p className={cn('text-sm font-semibold text-fg', toast.variant === 'apple' && 'text-white')}>
+                      {toast.title}
+                    </p>
                     {toast.description && (
-                      <p className="mt-0.5 text-xs leading-5 text-fg-muted">{toast.description}</p>
+                      <p className={cn('mt-0.5 text-xs leading-5 text-fg-muted', toast.variant === 'apple' && 'text-slate-300')}>
+                        {toast.description}
+                      </p>
                     )}
                     {toast.action && (
                       <button

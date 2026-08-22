@@ -220,6 +220,15 @@ function AuthPage() {
     }
   };
 
+  const handleAppleLogin = () => {
+    toast.toast({
+      title: 'Apple Sign-In',
+      description: "Apple Sign-In is currently unavailable. We're working to bring it to SafarAI soon.",
+      variant: 'apple',
+      duration: 4200,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 px-4 py-4 sm:px-6 sm:py-6">
       <div className="mx-auto grid w-full max-w-6xl overflow-hidden rounded-3xl border border-white/10 bg-[#151329] shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)] lg:min-h-[42rem] lg:grid-cols-[1.05fr_1fr]">
@@ -450,11 +459,11 @@ function AuthPage() {
               </button>
               <button
                 type="button"
-                onClick={() => handleOAuthLogin('apple')}
+                onClick={handleAppleLogin}
                 disabled={Boolean(oauthLoading)}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-white/10 disabled:opacity-60"
               >
-                {oauthLoading === 'apple' ? <Icon name="refresh" size="sm" className="animate-spin" /> : <AppleIcon />}
+                <AppleIcon />
                 Apple
               </button>
             </div>
